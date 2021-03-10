@@ -20,7 +20,7 @@ func (collector *ChartCollector) Collect(channel chan<- prometheus.Metric) {
 	deployments := collector.client.GetDeployments()
 
 	for _, deployment := range deployments {
-		channel <- prometheus.MustNewConstMetric(collector.chartMetric, prometheus.CounterValue, DefaultMetricsValue, deployment.Namespace, deployment.Name, deployment.ChartName, deployment.ChartVersion)
+		channel <- prometheus.MustNewConstMetric(collector.chartMetric, prometheus.CounterValue, DefaultMetricsValue, deployment.Namespace, deployment.Name, deployment.ChartName, deployment.ChartVersion, deployment.APIVersion)
 	}
 }
 
@@ -28,7 +28,7 @@ func NewChartCollector(client client.KubernetesClient) *ChartCollector {
 	return &ChartCollector{
 		chartMetric: prometheus.NewDesc("chart_metrics",
 			"metrics about charts",
-			[]string{"namespace", "deployment_name", "chart_name", "chart_version"}, nil,
+			[]string{"namespace", "deployment_name", "chart_name", "chart_version", "api_version"}, nil,
 		),
 		client: client,
 	}

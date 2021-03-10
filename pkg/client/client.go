@@ -51,12 +51,12 @@ func (c *KubernetesClient) Start(settings settings.Settings) {
 func (c *KubernetesClient) GetDeployments() []model.DeploymentInfo {
 	var deploymentData []model.DeploymentInfo
 
-	deployments, err := c.client.ExtensionsV1beta1().Deployments("").List(context.TODO(), metav1.ListOptions{})
+	deploymentsExtensionV1Beta1, err := c.client.ExtensionsV1beta1().Deployments("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		log.Errorln(err)
+		log.Info("cannot find deployment with extensions/v1beta1 API")
 	}
 
-	for _, deployment := range deployments.Items {
+	for _, deployment := range deploymentsExtensionV1Beta1.Items {
 		value, exist := deployment.ObjectMeta.Labels["app.kubernetes.io/managed-by"]
 		if exist {
 			if isManagedByHelm(value) {
@@ -77,6 +77,109 @@ func (c *KubernetesClient) GetDeployments() []model.DeploymentInfo {
 							Namespace:    deployment.Namespace,
 							ChartName:    chartName,
 							ChartVersion: chartVersion,
+							APIVersion:   "extensions/v1beta1",
+						})
+					}
+				}
+			}
+		}
+	}
+
+	deploymentsAppsV1Beta1, err := c.client.AppsV1beta1().Deployments("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		log.Info("cannot find deployment with apps/v1beta1 API")
+	}
+
+	for _, deployment := range deploymentsAppsV1Beta1.Items {
+		value, exist := deployment.ObjectMeta.Labels["app.kubernetes.io/managed-by"]
+		if exist {
+			if isManagedByHelm(value) {
+				var chartName string
+				var chartVersion string
+
+				chart, exist := deployment.ObjectMeta.Labels["helm.sh/chart"]
+				if exist {
+					chartRegex := regexp.MustCompile(`([a-z]+(-[a-z]+)*)-(\d.*)`)
+					chartData := chartRegex.FindStringSubmatch(chart)
+
+					if len(chartData) == 4 {
+						chartName = chartData[1]
+						chartVersion = chartData[3]
+
+						deploymentData = append(deploymentData, model.DeploymentInfo{
+							Name:         deployment.Name,
+							Namespace:    deployment.Namespace,
+							ChartName:    chartName,
+							ChartVersion: chartVersion,
+							APIVersion:   "apps/v1beta1",
+						})
+					}
+				}
+			}
+		}
+	}
+
+	deploymentsAppsV1Beta2, err := c.client.AppsV1beta2().Deployments("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		log.Info("cannot find deployment with apps/v1beta2 API")
+	}
+
+	for _, deployment := range deploymentsAppsV1Beta2.Items {
+		value, exist := deployment.ObjectMeta.Labels["app.kubernetes.io/managed-by"]
+		if exist {
+			if isManagedByHelm(value) {
+				var chartName string
+				var chartVersion string
+
+				chart, exist := deployment.ObjectMeta.Labels["helm.sh/chart"]
+				if exist {
+					chartRegex := regexp.MustCompile(`([a-z]+(-[a-z]+)*)-(\d.*)`)
+					chartData := chartRegex.FindStringSubmatch(chart)
+
+					if len(chartData) == 4 {
+						chartName = chartData[1]
+						chartVersion = chartData[3]
+
+						deploymentData = append(deploymentData, model.DeploymentInfo{
+							Name:         deployment.Name,
+							Namespace:    deployment.Namespace,
+							ChartName:    chartName,
+							ChartVersion: chartVersion,
+							APIVersion:   "apps/v1beta2",
+						})
+					}
+				}
+			}
+		}
+	}
+
+	deploymentsAppsV1, err := c.client.AppsV1().Deployments("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		log.Info("cannot find deployment with apps/v1 API")
+	}
+
+	for _, deployment := range deploymentsAppsV1.Items {
+		value, exist := deployment.ObjectMeta.Labels["app.kubernetes.io/managed-by"]
+		if exist {
+			if isManagedByHelm(value) {
+				var chartName string
+				var chartVersion string
+
+				chart, exist := deployment.ObjectMeta.Labels["helm.sh/chart"]
+				if exist {
+					chartRegex := regexp.MustCompile(`([a-z]+(-[a-z]+)*)-(\d.*)`)
+					chartData := chartRegex.FindStringSubmatch(chart)
+
+					if len(chartData) == 4 {
+						chartName = chartData[1]
+						chartVersion = chartData[3]
+
+						deploymentData = append(deploymentData, model.DeploymentInfo{
+							Name:         deployment.Name,
+							Namespace:    deployment.Namespace,
+							ChartName:    chartName,
+							ChartVersion: chartVersion,
+							APIVersion:   "apps/v1",
 						})
 					}
 				}
@@ -88,12 +191,12 @@ func (c *KubernetesClient) GetDeployments() []model.DeploymentInfo {
 }
 
 func (c *KubernetesClient) GetStatus() (bool, error) {
-	api, err := c.client.ServerVersion()
+	version, err := c.client.ServerVersion()
 	if err != nil {
 		return false, err
 	}
 
-	log.Println(api.String())
+	log.Println("Kubernetes version: " + version.String())
 	return true, nil
 }
 
