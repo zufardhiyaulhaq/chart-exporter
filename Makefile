@@ -8,3 +8,6 @@ build:
 
 run:
 	go run cmd/chart-exporter/main.go
+
+chart:
+	helm package charts/chart-exporter -d charts/releases
